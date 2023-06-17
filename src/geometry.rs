@@ -1,71 +1,43 @@
-use ndarray::prelude::*;
+use num::complex::Complex;
+use ndarray::ArrayView;
+use ndarray::{Dim, Ix};
 
-pub fn r_mag(x: &Array1<f64>, y: &Array1<f64>, r0: &Array1<f64>, z: &Array2<f64>) -> Array2<f64> {
+use crate::{F, MC, PI};
 
-    let x_sq = x.map(|v| f64::powi(*v - r0[0], 2));
-    let y_sq = y.map(|v| f64::powi(*v - r0[1], 2));
-    let mut res = z.map(|v| f64::powi(*v - r0[2], 2));
-
-    azip!((z_row in res.rows_mut(), x2 in &x_sq) {
-        azip!((z2 in z_row, y2 in &y_sq) {
-            *z2 = (*z2 + x2 + y2).sqrt()
-        })
-    });
-
-    res
+pub struct Position {
+    pub x: F,
+    pub y: Option<F>,
+    pub z: F,
 }
 
-pub fn proj(x: &Array1<f64>, y: &Array1<f64>, r0: &Array1<f64>, r: &Array2<f64>,
-            z: &Array2<f64>, z_x: &Array2<f64>, z_y: &Array2<f64>,) -> Array2<f64> {
-
-    let dx = x.map(|v| *v - r0[0]);
-    let dy = y.map(|v| *v - r0[1]);
-    let mut res = z.map(|v| *v - r0[2]);
-
-    azip!((z_r in res.rows_mut(), z_x_r in z_x.rows(), z_y_r in z_y.rows(), r_r in r.rows(), x in &dx) {
-        azip!((z_i in z_r, z_x_i in &z_x_r, z_y_i in &z_y_r, y in &dy, r_i in &r_r) {
-            *z_i = ((-z_x_i * x) + (-z_y_i * y) + *z_i) / r_i
-        })
-    });
-
-    res
-}
-pub fn xform(x: &Array1<f64>, y: &Array1<f64>, r0: &Array1<f64>, max_r: f64, eta: &Array2<f64>) -> Array2<f64> {
-
-    let all_r = r_mag(&x, &y, &r0, &eta);
-
-    let ncols = 2;
-    let mut nrows = 0;
-    // count number of in values
-    for r in all_r.iter() { if *r < max_r { nrows += 1 }}
-
-    let mut arr1 = Array2::<f64>::zeros((nrows, ncols));
-    let mut i = 0;
-    ndarray::Zip::from(&all_r).and(eta).for_each(|r, z| {
-        if *r < max_r {
-            arr1.slice_mut(s![i, ..]).assign(&ArrayView::from(&[*r, *z]));
-            i += 1;
-        }
-    });
-    arr1
+#[inline(always)]
+pub fn dist_img(r1: &Position, r2: &Position) -> F {
+    // TODO: Check for y dimension
+    ((r1.x - r2.x).powi(2) + (r2.z + r1.z).powi(2)).sqrt()
 }
 
-pub fn xform_f(x: &Array1<f64>, y: &Array1<f64>, r0: &Array1<f64>, max_r: f64, eta: &Array2<f64>) -> Array2<f64> {
-
-    let all_r = r_mag(&x, &y, &r0, &eta);
-
-    let ncols = 2;
-    let mut data = Vec::new();
-    let mut nrows = 0;
-
-    ndarray::Zip::from(&all_r).and(eta).for_each(|r, z| {
-        if *r < max_r {
-            data.extend_from_slice(&[*r, *z]);
-            nrows += 1;
-        }
-    });
-
-    let arr = Array2::from_shape_vec((nrows, ncols), data).unwrap();
-    arr
-
+#[inline(always)]
+pub fn dist_3_d(r_ele: &Position, x: F, y: F, z: F) -> F {
+    ((x - r_ele.x).powi(2) + (y - r_ele.y.unwrap()).powi(2) + (z - r_ele.z).powi(2)).sqrt()
 }
+
+#[inline(always)]
+pub fn dist_2_d(r_ele: &Position, x: F, z: F) -> F {
+    ((x - r_ele.x).powi(2) + (z - r_ele.z).powi(2)).sqrt()
+}
+
+#[inline(always)]
+pub fn proj_3_d(r_ele: &Position, x: F, y: F, eta: ArrayView<F, Dim<[Ix; 1]>>) -> F {
+    (eta[0] - r_ele.z) - eta[1] * (x - r_ele.x) - eta[2] * (y - r_ele.y.unwrap())
+}
+
+#[inline(always)]
+pub fn proj_2_d(r_ele: &Position, x: F, eta: ArrayView<F, Dim<[Ix; 1]>>) -> F {
+    (eta[0] - r_ele.z) - eta[1] * (x - r_ele.x)
+}
+
+#[inline(always)]
+pub fn dist_shift(d_d: F, k_a: ArrayView<F, Dim<[Ix; 1]>>) -> MC {
+    k_a.map(|&k| Complex::new(0.0, -2.0 * PI * d_d * k).exp())
+}
+

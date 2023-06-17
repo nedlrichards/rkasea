@@ -1,5 +1,5 @@
 [package]
-name = "kasea"
+name = "rkasea"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,13 @@ edition = "2021"
 
 [dependencies]
 ndarray = '0.15.0'
+ndarray-stats = '0.5.1'
 num = '0.4.0'
+hdf5 = '0.8.1'
+plotters = '0.3.4'
+realfft = '3.3.0'
+eqsolver = '0.1.2'
+toml = '0.7.4'
 
 [dev-dependencies]
 criterion = { version = "0.4", features = [ "html_reports" ] }
