@@ -12,8 +12,6 @@ fn main() {
     let c = 1500.0;
     let decimation = 8;
     let fc = 3.5e3;
-    let fs = 2.0 * (fc * 1.6);
-    let dx = c / (fs * (decimation as F));
 
     let c = 1500.0;
     let tau_buf = 0.2e-3;
@@ -33,12 +31,13 @@ fn main() {
 
     let d_img = ((r_rcr.x - r_src.x).powi(2)
                  + (r_rcr.z + r_src.z).powi(2)).sqrt();
-    let pulse = nuttall_pulse(fc, fs);
+    let pulse = nuttall_pulse(fc);
+
+    let dx = c / (pulse.fs * (decimation as F));
 
     let spec = ka_sum::Specs{
         r_src: r_src,
         r_rcr: r_rcr,
-        fs: fs,
         c: c,
         duration: duration,
         tau_0: (d_img / c) - tau_buf,

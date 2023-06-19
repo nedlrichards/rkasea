@@ -1,10 +1,21 @@
 use ndarray::prelude::*;
 use crate::{F, M, PI};
 
-pub fn nuttall_pulse(fc: F, fs: F) -> M {
+pub struct Pulse<'a> {
+    pub pulse_name: &'a str,
+    pub fc: F,
+    pub fs: F,
+    pub signal: M,
+}
+
+pub fn nuttall_pulse(fc: F) -> Pulse<'static> {
 
     let nuttall: M = array![0.4243801, -0.4973406, 0.0782793];
-    let num_cycles: F = 5.;
+    let num_cycles: F = 5.0;
+
+    let f_cut = 1.9 * fc;  // estimate of Q for pulse
+    let fs = 2.0 * f_cut;
+
     let mut num_samples = (fs * num_cycles / fc).ceil();
     if (num_samples % 2.0) > 0.5 {num_samples += 1.0;}
 
@@ -14,6 +25,6 @@ pub fn nuttall_pulse(fc: F, fs: F) -> M {
                           .fold(0.0, |acc, (i, a)| acc + a * ((i as F) * 2.0 * PI * s / num_samples).cos()));
 
 
-    xmitt
+    Pulse{pulse_name: "nuttall", fc:fc, fs:fs, signal: xmitt}
 }
 

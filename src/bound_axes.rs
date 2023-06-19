@@ -5,7 +5,7 @@ use crate::geometry::Position;
 pub fn bound_axes_x(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> (F, F) {
     // TODO: ignore dy for the moment
     let eps = 1e-5;
-    let (dr, z_src2, z_rcr2) = relative_coord(r_src, r_rcr, d_lim, offset);
+    let (dr, z_src2, z_rcr2) = relative_coord(r_src, r_rcr, offset);
     let x_root = |x: f64| {(x.powi(2) + z_src2).sqrt()
                        + ((x - dr).powi(2) + z_rcr2).sqrt()
                        - (d_lim as f64)};
@@ -18,7 +18,7 @@ pub fn bound_axes_x(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> 
 pub fn bound_axes_y(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> F {
     // find y bounds
     let eps: f64 = 1e-5;
-    let (dr, z_src2, z_rcr2) = relative_coord(r_src, r_rcr, d_lim, offset);
+    let (dr, z_src2, z_rcr2) = relative_coord(r_src, r_rcr, offset);
 
     // position where y crosses d_lim
     let y_root = |x: f64, y: f64| {(x.powi(2) + y.powi(2) + z_src2).sqrt()
@@ -33,7 +33,7 @@ pub fn bound_axes_y(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> 
     y_lim(test) as F
 }
 
-fn relative_coord(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> (f64, f64, f64) {
+fn relative_coord(r_src: &Position, r_rcr: &Position, offset: F) -> (f64, f64, f64) {
     let dr = (r_src.x - r_rcr.x).abs() as f64;
 
     let z_src2 = (r_src.z + offset.copysign(r_src.z)).powi(2) as f64;

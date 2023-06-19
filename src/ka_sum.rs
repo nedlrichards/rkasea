@@ -1,44 +1,44 @@
 use ndarray::{Zip, Array1, Array2, Axis, s};
-use crate::{F, C, M, IMG};
+use crate::{F, C, IMG};
 use crate::k_axis;
 use crate::t_axis;
 use crate::geometry::{Position, dist_img, proj_2_d, dist_2_d};
+use crate::xmitt::{Pulse};
 use num::complex::Complex;
 use realfft::{RealFftPlanner};
 
 pub struct Surface1d<'a> {
     pub name: &'a str,
-    pub x_a: M,
+    pub x_a: Array1<F>,
     pub eta: Array2<F>,
 }
 
-pub struct Specs {
+pub struct Specs<'a> {
     pub r_src: Position,
     pub r_rcr: Position,
-    pub fs: F,
     pub c: F,
     pub duration: F,
     pub tau_0: F,
-    pub pulse: M,
+    pub pulse: Pulse<'a>,
 }
 
 pub fn ka_sum_1d(spec: &Specs, surface: &Surface1d) -> Array1<F>{
 
     let params = into_ier_param(spec, surface);
-    let dr = spec.c / spec.fs;
+    let dr = spec.c / spec.pulse.fs;
     let d_0 = spec.tau_0 * spec.c;
 
     // integer sample result
-    let t_a = t_axis(spec.fs, spec.duration, spec.tau_0);
-    let n_pulse = spec.pulse.len();
+    let t_a = t_axis(spec.pulse.fs, spec.duration, spec.tau_0);
+    let n_pulse = spec.pulse.signal.len();
     let n_pulse_ft = n_pulse / 2 + 1;
-    let k_a_pulse = k_axis(spec.fs, (n_pulse as F) / spec.fs, spec.c);
+    let k_a_pulse = k_axis(spec.pulse.fs, (n_pulse as F) / spec.pulse.fs, spec.c);
 
     //setup t -> k fft
     let mut planner = RealFftPlanner::new();
     let r2c = planner.plan_fft_forward(n_pulse);
     let mut pulse_ft = r2c.make_output_vec();
-    let mut indata = spec.pulse.clone().to_vec();
+    let mut indata = spec.pulse.signal.clone().to_vec();
     r2c.process(&mut indata, &mut pulse_ft).unwrap();
     let mut pulse_ft = Array1::from_vec(pulse_ft);
     let np = &pulse_ft.len();
@@ -67,7 +67,7 @@ pub fn ka_sum_1d(spec: &Specs, surface: &Surface1d) -> Array1<F>{
 
     igral.rows_mut().into_iter().enumerate().for_each(|(i, mut e)| {
         let mut outdata = c2r.make_output_vec();
-        let mut slice = result.slice_mut(s![i .. i + spec.pulse.raw_dim()[0]]);
+        let mut slice = result.slice_mut(s![i .. i + spec.pulse.signal.raw_dim()[0]]);
         e *= &pulse_ft;
         c2r.process(&mut e.to_vec(), &mut outdata).unwrap();
         let shift_pulse = Array1::from_vec(outdata);

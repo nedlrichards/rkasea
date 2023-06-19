@@ -11,14 +11,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let fc: F = 3e3;
     let fs: F = 20e3;
 
-    let xmitt = nuttall_pulse(fc, fs);
+    let xmitt = nuttall_pulse(fc);
     let dt = 1.0 / fs;
-    let t_a = Array1::range(0.0, dt * (xmitt.raw_dim()[0] as F), dt);
+    let t_a = Array1::range(0.0, dt * (xmitt.signal.raw_dim()[0] as F), dt);
 
     let t_min: f32 = t_a[0];
     let t_max: f32 = t_a[t_a.len() - 1];
 
-    let iter = zip(t_a.map(|t| t * 1e3).to_vec(), xmitt.to_vec());
+    let iter = zip(t_a.map(|t| t * 1e3).to_vec(), xmitt.signal.to_vec());
 
     let root = BitMapBackend::new("/home/nedrichards/rust_proj/rkasea/figures/pulse.png", (1024, 768)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let f_a: M = Array::range(0., num_f * f_scale, f_scale);
     let mut planner = RealFftPlanner::<F>::new();
     let fft = planner.plan_fft_forward(t_a.len());
-    let mut data = xmitt.to_vec();
+    let mut data = xmitt.signal.to_vec();
     let mut output = fft.make_output_vec();
     fft.process(&mut data, &mut output).unwrap();
 

@@ -6,6 +6,7 @@ pub mod ka_sum;
 pub mod geometry;
 pub mod xmitt;
 pub mod bound_axes;
+pub mod load_xmission;
 
 #[cfg(feature = "bigger")] pub type F = f64;
 #[cfg(not(feature = "bigger"))] pub type F = f32;
