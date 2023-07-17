@@ -2,7 +2,7 @@ use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use std::iter::zip;
-use rkasea::xmitt::nuttall_pulse;
+use rkasea::xmission::nuttall_pulse;
 use rkasea::{F, M};
 use realfft::RealFftPlanner;
 

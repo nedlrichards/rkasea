@@ -1,14 +1,23 @@
 use ndarray::prelude::*;
 use crate::{F, M, PI};
 
-pub struct Pulse<'a> {
-    pub pulse_name: &'a str,
+pub struct Pulse {
     pub fc: F,
     pub fs: F,
     pub signal: M,
 }
 
-pub fn nuttall_pulse(fc: F) -> Pulse<'static> {
+impl Pulse {
+    pub fn t_axis(&self) -> Array1<F> {
+        Array::range(0.0, (self.signal.len() as F) / self.fs, 1.0 / self.fs)
+    }
+    pub fn f_axis(&self) -> Array1<F> {
+        Array::range(0.0, (self.signal.len() / 2 + 1) as F, 1.0) * self.fs
+    }
+
+}
+
+pub fn nuttall_pulse(fc: F) -> Pulse {
 
     let nuttall: M = array![0.4243801, -0.4973406, 0.0782793];
     let num_cycles: F = 5.0;
@@ -24,7 +33,6 @@ pub fn nuttall_pulse(fc: F) -> Pulse<'static> {
                           * nuttall.view().into_iter().enumerate()
                           .fold(0.0, |acc, (i, a)| acc + a * ((i as F) * 2.0 * PI * s / num_samples).cos()));
 
-
-    Pulse{pulse_name: "nuttall", fc:fc, fs:fs, signal: xmitt}
+    Pulse{fc:fc, fs:fs, signal: xmitt}
 }
 

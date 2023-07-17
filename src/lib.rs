@@ -2,11 +2,11 @@ use ndarray::prelude::{Array1, Array2};
 use std::f64::consts::PI as FullPI;
 use num::complex::Complex;
 
+pub mod io_experiment;
+pub mod greens;
 pub mod ka_sum;
-pub mod geometry;
-pub mod xmitt;
-pub mod bound_axes;
-pub mod load_xmission;
+pub mod xmission;
+pub mod surface;
 
 #[cfg(feature = "bigger")] pub type F = f64;
 #[cfg(not(feature = "bigger"))] pub type F = f32;
@@ -24,7 +24,6 @@ pub fn t_axis(fs: F, duration: F, tau_0: F) -> M {
     let n = axis_size(fs, duration);
 
     Array1::range(0.0, n as F, 1.0) * dt + tau_0
-
 }
 
 pub fn f_axis(fs: F, duration: F) -> M {

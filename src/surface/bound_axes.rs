@@ -1,8 +1,8 @@
+use ndarray::Array1;
 use eqsolver::{single_variable::FDNewton, finite_differences::central};
 use crate::F;
-use crate::geometry::Position;
 
-pub fn bound_axes_x(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> (F, F) {
+pub fn bound_axes_x(r_src: &Array1<F>, r_rcr: &Array1<F>, d_lim: F, offset: F) -> (F, F) {
     // TODO: ignore dy for the moment
     let eps = 1e-5;
     let (dr, z_src2, z_rcr2) = relative_coord(r_src, r_rcr, offset);
@@ -15,7 +15,7 @@ pub fn bound_axes_x(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> 
     (x_start as F, x_end as F)
 }
 
-pub fn bound_axes_y(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> F {
+pub fn bound_axes_y(r_src: &Array1<F>, r_rcr: &Array1<F>, d_lim: F, offset: F) -> F {
     // find y bounds
     let eps: f64 = 1e-5;
     let (dr, z_src2, z_rcr2) = relative_coord(r_src, r_rcr, offset);
@@ -33,12 +33,10 @@ pub fn bound_axes_y(r_src: &Position, r_rcr: &Position, d_lim: F, offset: F) -> 
     y_lim(test) as F
 }
 
-fn relative_coord(r_src: &Position, r_rcr: &Position, offset: F) -> (f64, f64, f64) {
-    let dr = (r_src.x - r_rcr.x).abs() as f64;
+fn relative_coord(r_src: &Array1<F>, r_rcr: &Array1<F>, offset: F) -> (f64, f64, f64) {
+    let dr = (r_src[0] - r_rcr[0]).abs() as f64;
 
-    let z_src2 = (r_src.z + offset.copysign(r_src.z)).powi(2) as f64;
-    let z_rcr2 = (r_rcr.z + offset.copysign(r_rcr.z)).powi(2) as f64;
+    let z_src2 = (r_src[2] + offset.copysign(r_src[2])).powi(2) as f64;
+    let z_rcr2 = (r_rcr[2] + offset.copysign(r_rcr[2])).powi(2) as f64;
     (dr, z_src2, z_rcr2)
 }
-
-

@@ -4,9 +4,57 @@ use crate::k_axis;
 use crate::t_axis;
 use crate::io_experiment::Static;
 use crate::surface::geometry::Surface1d;
-use crate::greens::{dist_img, proj_2_d, dist_2_d};
 use num::complex::Complex;
 use realfft::{RealFftPlanner};
+
+pub fn dist_img(r1: &Array1<F>, r2: &Array1<F>) -> F {
+    let l = r1.len() - 1;
+    let res = ((r1[0] - r2[0]).powi(2) + (r2[l] + r1[l]).powi(2)).sqrt();
+    if l == 2 {
+        res += (r1[1] - r2[1]).powi(2);
+    }
+
+    l
+}
+
+#[inline(always)]
+pub fn dist_2_d(r_ele: &Array1<F>, x: F, z: F) -> F {
+    ((x - r_ele[0]).powi(2) + (z - r_ele[2]).powi(2)).sqrt()
+}
+
+#[inline(always)]
+pub fn proj_2_d(r_ele: &Array1<F>, x: F, eta: ArrayView<F, Dim<[Ix; 1]>>) -> F {
+    (eta[0] - r_ele[2]) - eta[1] * (x - r_ele[0])
+}
+
+#[inline(always)]
+pub fn scale_and_shift(amp: F, d_d: F, k_a: ArrayView<F, Dim<[Ix; 1]>>) -> MC {
+    k_a.map(|&k| amp * Complex::new(0.0, -2.0 * PI * d_d * k).exp())
+}
+
+pub fn dist_bound(stat: &Static, eta_1D: &Array2<F>) -> Array1<F>{
+    let r_max = dist_img(&stat.r_src, &stat.r_rcr) + stat.duration * stat.c;
+
+    let ncols = 3;
+
+    let mut data = Vec::new();
+    let mut nrows = 0;
+
+    Zip::from(&surface.x_axis()).and(eta_1D.lanes(Axis(1))).for_each(|&x, z| {
+
+        let d_s = dist_2_d(&stat.r_src, x, z[0]);
+        let d_r = dist_2_d(&stat.r_rcr, x, z[0]);
+        let d = d_s + d_r;
+
+        if d <= r_max {
+            let p = proj_2_d(&stat.r_src, x, z);
+            let row = vec![d_s, d_r, p];
+            data.extend_from_slice(&row);
+            nrows += 1;
+        }
+    });
+    Array2::from_shape_vec((nrows, ncols), data).unwrap()
+}
 
 pub fn ka_sum_1d(stat: &Static, surface: &Surface1d) -> Array1<F>{
 
@@ -19,19 +67,6 @@ pub fn ka_sum_1d(stat: &Static, surface: &Surface1d) -> Array1<F>{
     let n_pulse = stat.pulse.signal.len();
     let n_pulse_ft = n_pulse / 2 + 1;
     let k_a_pulse = k_axis(stat.pulse.fs, (n_pulse as F) / stat.pulse.fs, stat.c);
-
-    //setup t -> k fft
-    let mut planner = RealFftPlanner::new();
-    let r2c = planner.plan_fft_forward(n_pulse);
-    let mut pulse_ft = r2c.make_output_vec();
-    let mut indata = stat.pulse.signal.clone().to_vec();
-    r2c.process(&mut indata, &mut pulse_ft).unwrap();
-    let mut pulse_ft = Array1::from_vec(pulse_ft);
-    let np = &pulse_ft.len();
-    pulse_ft[np - 1] = Complex::new(0.0, 0.0);
-
-    //setup k -> t fft
-    let c2r = planner.plan_fft_inverse(n_pulse);
 
     // discretized acculation step
     let mut igral: Array2<C> = Array2::zeros((t_a.len(), n_pulse_ft));

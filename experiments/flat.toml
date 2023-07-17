@@ -1,21 +1,16 @@
-[t_f]
-c = 1500.0
-max_dur = 0.02
-t_pad = 0.001
-
-[xmitt]
-fc = 2500.0
-name = "nuttall"
-
-[geometry]
+[static]
 zrcr = -10.0
 zsrc = -20.0
+fc = 2500.0
+c = 1500.0
+decimation = 10
 dr = 200.0
-solutions = ['all']
+theta = 0.0
+t_pad = 0.001
+duration = 0.02
+solutions = ["all"]
 
 [surface]
 type = "flat"
-decimation = 10
-theta = [0, 45.0]
 time_step = 0.1
 num_steps = 1
