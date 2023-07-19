@@ -17,6 +17,7 @@ pub struct IO {
     toml_table: Table,
 }
 
+#[derive(Clone)]
 pub struct Static {
     pub r_src: Array1<F>,
     pub r_rcr: Array1<F>,

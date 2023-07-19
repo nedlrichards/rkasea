@@ -9,12 +9,11 @@ use realfft::{RealFftPlanner};
 
 pub fn dist_img(r1: &Array1<F>, r2: &Array1<F>) -> F {
     let l = r1.len() - 1;
-    let res = ((r1[0] - r2[0]).powi(2) + (r2[l] + r1[l]).powi(2)).sqrt();
+    let res = (r1[0] - r2[0]).powi(2) + (r2[l] + r1[l]).powi(2);
     if l == 2 {
         res += (r1[1] - r2[1]).powi(2);
     }
-
-    l
+    l.sqrt()
 }
 
 #[inline(always)]
@@ -83,7 +82,6 @@ pub fn ka_sum_1d(stat: &Static, surface: &Surface1d) -> Array1<F>{
         }
     });
 
-
     let mut result: Array1<F> = Array1::zeros(t_a.raw_dim()[0] + n_pulse);
 
     igral.rows_mut().into_iter().enumerate().for_each(|(i, mut e)| {
@@ -95,32 +93,4 @@ pub fn ka_sum_1d(stat: &Static, surface: &Surface1d) -> Array1<F>{
         slice += &shift_pulse;
     });
     result
-
-}
-
-
-fn ier_param_2D(stat: &Static, surface: &Surface1d) -> Array2<F> {
-    // transform surface and element positions into range and amplitude vector
-
-    let r_max = dist_img(&stat.r_src, &stat.r_rcr) + stat.duration * stat.c;
-
-    let ncols = 3;
-
-    let mut data = Vec::new();
-    let mut nrows = 0;
-
-    Zip::from(&surface.x_axis()).and(surface.eta().lanes(Axis(1))).for_each(|&x, z| {
-
-        let d_s = dist_2_d(&stat.r_src, x, z[0]);
-        let d_r = dist_2_d(&stat.r_rcr, x, z[0]);
-        let d = d_s + d_r;
-
-        if d <= r_max {
-            let p = proj_2_d(&stat.r_src, x, z);
-            let row = vec![d_s, d_r, p];
-            data.extend_from_slice(&row);
-            nrows += 1;
-        }
-    });
-    Array2::from_shape_vec((nrows, ncols), data).unwrap()
 }

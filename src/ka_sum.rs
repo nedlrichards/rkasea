@@ -8,6 +8,76 @@ use crate::greens::{dist_img, proj_2_d, dist_2_d};
 use num::complex::Complex;
 use realfft::{RealFftPlanner};
 
+pub struct Igrand {
+    statics: Static,
+    accumulator: Array2<C>,
+    d_0: F,
+    dr: F,
+    t_a: Array1<F>,
+    k_a_chunk: Array1<F>,
+}
+
+impl Igrand {
+    pub fn new(statics: Static) -> Igrand {
+        let dr = statics.c / statics.pulse.fs;
+        let d_0 = statics.tau_0 * statics.c;
+
+        // integer sample result
+        let t_a = t_axis(statics.pulse.fs, statics.duration, statics.tau_0);
+        let n_chunk = statics.pulse.signal.len();
+        let n_pulse_ft = n_chunk / 2 + 1;
+        let k_a_chunk = k_axis(statics.pulse.fs, (n_chunk as F) / statics.pulse.fs, statics.c);
+
+        Igrand{ statics: statics,
+                accumulator: Array2::ones((t_a.len(), n_chunk)),
+                d_0: d_0,
+                dr: dr,
+                t_a: t_a,
+                k_a_chunk: k_a_chunk }
+    }
+
+    pub fn accumulate(&mut self, ray: &Array1<F>) {
+        let scale = Complex::new(ray[2] / (ray[0].powi(2) * ray[1]), 0.0) ;
+        let d_rel = ray[0] + ray[1] - self.d_0;
+        let ind = (d_rel / self.dr) as usize;
+        let offset = d_rel % self.dr;
+        let mut ft = self.accumulator.index_axis_mut(Axis(0), ind);
+        let infin: Array1<C> = self.k_a_chunk.map(|k| scale * (-IMG * k * offset).exp());
+        ft += &infin;
+    }
+
+    pub fn to_timeseries(&self) -> Array1<F> {
+        //setup t -> k fft
+        let mut planner = RealFftPlanner::new();
+        let r2c = planner.plan_fft_forward(self.k_a_chunk.len());
+        let mut pulse_ft = r2c.make_output_vec();
+        let mut indata = self.statics.pulse.signal.clone().to_vec();
+        r2c.process(&mut indata, &mut pulse_ft).unwrap();
+        let mut pulse_ft = Array1::from_vec(pulse_ft);
+        let np = &pulse_ft.len();
+        pulse_ft[np - 1] = Complex::new(0.0, 0.0);
+
+        //setup k -> t fft
+        let n_pulse = self.statics.pulse.signal.len();
+        let c2r = planner.plan_fft_inverse(n_pulse);
+
+        let mut timeseries: Array1<F> = Array1::zeros(self.t_a.raw_dim()[0] + n_pulse);
+
+        self.accumulator.rows().into_iter().enumerate().for_each(|(i, e)| {
+            let mut outdata = c2r.make_output_vec();
+            let mut slice = timeseries.slice_mut(s![i .. i + n_pulse]);
+            let mut shaped = &e * &pulse_ft;
+            c2r.process(&mut shaped.to_vec(), &mut outdata).unwrap();
+            let shift_pulse = Array1::from_vec(outdata);
+            slice += &shift_pulse;
+        });
+        timeseries
+    }
+
+
+}
+
+
 pub fn ka_sum_1d(stat: &Static, surface: &Surface1d) -> Array1<F>{
 
     let params = ier_param_2D(stat, surface);

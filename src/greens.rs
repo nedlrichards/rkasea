@@ -4,6 +4,7 @@ use ndarray::{Dim, Ix, Array1, ArrayView};
 use crate::{F, MC, PI};
 
 #[inline(always)]
+
 pub fn dist_img(r1: &Array1<F>, r2: &Array1<F>) -> F {
     ((r1[0] - r2[0]).powi(2) + (r1[1] - r2[1]).powi(2) + (r2[2] + r1[2]).powi(2)).sqrt()
 }

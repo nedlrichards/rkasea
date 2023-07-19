@@ -12,6 +12,7 @@ fn main() {
     let surface = io.load_surface(&stat);
     io.write_setup(&stat.pulse);
 
+    let igrand = ka_sum::Igrand::new(stat.clone());
     let ka_1d = ka_sum::ka_sum_1d(&stat, &surface);
 
 }

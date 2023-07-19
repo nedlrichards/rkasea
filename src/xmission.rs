@@ -1,6 +1,7 @@
 use ndarray::prelude::*;
 use crate::{F, M, PI};
 
+#[derive(Clone)]
 pub struct Pulse {
     pub fc: F,
     pub fs: F,
